@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/architect/logs#readme",
   "dependencies": {
-    "@architect/utils": "~1.5.1",
+    "@architect/utils": "copperinc/utils#iot",
     "aws-sdk": "~2.644.0",
     "chalk": "~4.1.0",
     "run-parallel": "~1.1.9",
