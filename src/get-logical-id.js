@@ -1,4 +1,5 @@
-let { sep } = require('path')
+let { sep, join } = require('path')
+let { existsSync } = require('fs')
 let { getLambdaName, toLogicalID } = require('@architect/utils')
 
 module.exports = function getLogicalID (inventory, dir) {
@@ -13,6 +14,7 @@ module.exports = function getLogicalID (inventory, dir) {
   let lambdae = {
     events: 'Event',
     http: 'HTTP',
+    macros: 'Macro',
     queues: 'Queue',
     scheduled: 'Scheduled',
     streams: 'Stream',
@@ -20,9 +22,30 @@ module.exports = function getLogicalID (inventory, dir) {
   }
   Object.entries(lambdae).forEach(([ pragma, type ]) => {
     if (lambda) return
-    if (inv[pragma]) inv[pragma].forEach(l => {
-      if (l.src.endsWith(pathToCode)) lambda = { ...l, type }
-    })
+    if (inv[pragma]) {
+      let ls = []
+      if (pragma === 'macros') {
+        inv[pragma].forEach(macro => {
+          let macroPath = null
+          let localPath = join(process.cwd(), 'src', 'macros', `${macro}.js`)
+          let localPath1 = join(process.cwd(), 'src', 'macros', macro)
+          let modulePath = join(process.cwd(), 'node_modules', macro)
+          let modulePath1 = join(process.cwd(), 'node_modules', `@${macro}`)
+          if (existsSync(localPath)) macroPath = localPath
+          else if (existsSync(localPath1)) macroPath = localPath1
+          else if (existsSync(modulePath)) macroPath = modulePath
+          else if (existsSync(modulePath1)) macroPath = modulePath1
+          // eslint-disable-next-line
+          let macroModule = require(macroPath)
+          if (macroModule.create) {
+            ls = ls.concat(macroModule.create(inventory))
+          }
+        })
+      } else ls = inv[pragma]
+      ls.forEach(l => {
+        if (l.src.endsWith(pathToCode)) lambda = { ...l, type }
+      })
+    }
   })
 
   if (lambda) {
